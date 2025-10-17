@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Energy Saver Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(to bottom, #1a5f7a, #159895);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow: hidden;
+        }
+        
+        .game-container {
+            width: 100%;
+            max-width: 900px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+        }
+        
+        .energy-container {
+            flex: 1;
+            margin-right: 20px;
+        }
+        
+        .energy-label {
+            display: flex;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .earth-icon {
+            width: 24px;
+            height: 24px;
+            margin-right: 10px;
+            background: linear-gradient(to bottom, #3a8de0, #2b6cb0);
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 10px rgba(114, 247, 141, 0.7);
+        }
+        
+        .energy-bar {
+            height: 25px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .energy-fill {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(to right, #ff4757, #ff9f1a);
+            border-radius: 12px;
+            transition: width 0.5s ease;
+        }
+        
+        .timer {
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 12px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            min-width: 140px;
+            text-align: center;
+        }
+        
+        .room {
+            position: relative;
+            height: 500px;
+            background: #2c3e50;
+            border-radius: 15px;
+            overflow: hidden;
+            transform-style: preserve-3d;
+            perspective: 1000px;
+            box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.7);
+        }
+        
+        .wall {
+            position: absolute;
+            background: #34495e;
+        }
+        
+        .back-wall {
+            width: 100%;
+            height: 100%;
+            transform: translateZ(-200px);
+        }
+        
+        .left-wall {
+            width: 400px;
+            height: 100%;
+            background: #2c3e50;
+            transform: rotateY(90deg) translateZ(-200px);
+        }
+        
+        .right-wall {
+            width: 400px;
+            height: 100%;
+            background: #2c3e50;
+            transform: rotateY(90deg) translateZ(200px);
+            right: 0;
+        }
+        
+        .floor {
+            position: absolute;
+            width: 100%;
+            height: 400px;
+            background: #1e272e;
+            transform: rotateX(90deg) translateZ(-200px);
+            bottom: 0;
+        }
+        
+        .appliance {
+            position: absolute;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .appliance.off {
+            filter: brightness(0.4);
+        }
+        
+        .bulb {
+            top: 50px;
+            left: 50px;
+            width: 60px;
+            height: 80px;
+        }
+        
+        .bulb-body {
+            width: 30px;
+            height: 40px;
+            background: #f1f2f6;
+            border-radius: 50% 50% 0 0;
+            margin: 0 auto;
+        }
+        
+        .bulb-base {
+            width: 20px;
+            height: 15px;
+            background: #e1b12c;
+            margin: 0 auto;
+        }
+        
+        .bulb-light {
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle, rgba(255, 255, 224, 0.8) 0%, rgba(255, 255, 224, 0) 70%);
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.5s ease;
+        }
+        
+        .bulb.off .bulb-light {
+            opacity: 0;
+        }
+        
+        .lamp {
+            top: 300px;
+            left: 100px;
+            width: 80px;
+            height: 120px;
+        }
+        
+        .lamp-base {
+            width: 15px;
+            height: 70px;
+            background: #7f8fa6;
+            margin: 0 auto;
+        }
+        
+        .lamp-shade {
+            width: 60px;
+            height: 40px;
+            background: #e84118;
+            border-radius: 10px 10px 0 0;
+            margin: 0 auto;
+            position: relative;
+        }
+        
+        .lamp-light {
+            width: 50px;
+            height: 80px;
+            background: radial-gradient(ellipse, rgba(255, 204, 0, 0.7) 0%, rgba(255, 204, 0, 0) 70%);
+            position: absolute;
+            top: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: all 0.5s ease;
+        }
+        
+        .lamp.off .lamp-light {
+            opacity: 0;
+        }
+        
+        .fridge {
+            top: 100px;
+            right: 100px;
+            width: 100px;
+            height: 180px;
+            background: #dcdde1;
+            border-radius: 8px;
+            border: 3px solid #7f8fa6;
+        }
+        
+        .fridge-door {
+            width: 100%;
+            height: 100%;
+            background: #f5f6fa;
+            border-radius: 5px;
+            position: relative;
+            transition: all 0.5s ease;
+        }
+        
+        .fridge-handle {
+            position: absolute;
+            left: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 8px;
+            height: 40px;
+            background: #7f8fa6;
+            border-radius: 4px;
+        }
+        
+        .fridge-light {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 5px;
+            background: #00a8ff;
+            border-radius: 3px;
+            transition: all 0.5s ease;
+        }
+        
+        .fridge.off .fridge-light {
+            background: #7f8fa6;
+        }
+        
+        .computer {
+            bottom: 50px;
+            left: 200px;
+            width: 120px;
+            height: 100px;
+        }
+        
+        .monitor {
+            width: 80px;
+            height: 60px;
+            background: #487eb0;
+            border-radius: 5px 5px 0 0;
+            margin: 0 auto;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .screen {
+            width: 70px;
+            height: 45px;
+            background: #00cec9;
+            border-radius: 3px;
+            margin: 5px auto;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.5s ease;
+        }
+        
+        .screen::before {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(45deg, rgba(255, 255, 255, 0.1) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.1) 75%, transparent 75%);
+            background-size: 10px 10px;
+        }
+        
+        .computer.off .screen {
+            background: #2d3436;
+        }
+        
+        .stand {
+            width: 10px;
+            height: 15px;
+            background: #7f8fa6;
+            margin: 0 auto;
+        }
+        
+        .base {
+            width: 40px;
+            height: 5px;
+            background: #7f8fa6;
+            margin: 0 auto;
+            border-radius: 0 0 3px 3px;
+        }
+        
+        .fan {
+            top: 150px;
+            left: 350px;
+            width: 80px;
+            height: 80px;
+        }
+        
+        .fan-base {
+            width: 40px;
+            height: 10px;
+            background: #718093;
+            margin: 0 auto;
+            border-radius: 5px;
+        }
+        
+        .fan-pole {
+            width: 10px;
+            height: 40px;
+            background: #718093;
+            margin: 0 auto;
+        }
+        
+        .fan-body {
+            width: 60px;
+            height: 60px;
+            background: #487eb0;
+            border-radius: 50%;
+            margin: 0 auto;
+            position: relative;
+        }
+        
+        .fan-blade {
+            position: absolute;
+            background: #fbc531;
+            width: 60px;
+            height: 15px;
+            border-radius: 7px;
+            top: 50%;
+            left: 50%;
+            transform-origin: center;
+            transition: transform 0.5s ease;
+        }
+        
+        .fan-blade:nth-child(1) {
+            transform: translate(-50%, -50%);
+        }
+        
+        .fan-blade:nth-child(2) {
+            transform: translate(-50%, -50%) rotate(60deg);
+        }
+        
+        .fan-blade:nth-child(3) {
+            transform: translate(-50%, -50%) rotate(120deg);
+        }
+        
+        .fan-blade:nth-child(4) {
+            transform: translate(-50%, -50%) rotate(180deg);
+        }
+        
+        .fan-blade:nth-child(5) {
+            transform: translate(-50%, -50%) rotate(240deg);
+        }
+        
+        .fan-blade:nth-child(6) {
+            transform: translate(-50%, -50%) rotate(300deg);
+        }
+        
+        .fan.on .fan-blade {
+            animation: spin 1.5s linear infinite;
+        }
+        
+        @keyframes spin {
+            100% {
+                transform: translate(-50%, -50%) rotate(360deg);
+            }
+        }
+        
+        .tv {
+            bottom: 100px;
+            right: 250px;
+            width: 120px;
+            height: 90px;
+        }
+        
+        .tv-screen {
+            width: 100px;
+            height: 70px;
+            background: linear-gradient(45deg, #8c7ae6, #0097e6);
+            border-radius: 5px;
+            margin: 0 auto;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.5s ease;
+        }
+        
+        .tv-screen::before {
+            content: "";
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.1),
+                rgba(0, 0, 0, 0.1) 2px,
+                transparent 2px,
+                transparent 4px
+            );
+        }
+        
+        .tv.off .tv-screen {
+            background: #2d3436;
+        }
+        
+        .tv-stand {
+            width: 60px;
+            height: 5px;
+            background: #7f8fa6;
+            margin: 0 auto;
+            border-radius: 2px;
+        }
+        
+        .tv-base {
+            width: 80px;
+            height: 10px;
+            background: #7f8fa6;
+            margin: 0 auto;
+            border-radius: 2px 2px 5px 5px;
+        }
+        
+        .switch {
+            position: absolute;
+            width: 15px;
+            height: 25px;
+            background: #7f8fa6;
+            border-radius: 5px;
+            bottom: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            cursor: pointer;
+        }
+        
+        .switch::after {
+            content: "";
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #44bd32;
+            border-radius: 50%;
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: all 0.3s ease;
+        }
+        
+        .appliance.off .switch::after {
+            background: #e84118;
+        }
+        
+        .victory {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+            z-index: 100;
+            border-radius: 15px;
+        }
+        
+        .victory.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .victory h2 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: #44bd32;
+        }
+        
+        .victory p {
+            font-size: 1.5rem;
+            margin-bottom: 30px;
+        }
+        
+        .restart-btn {
+            padding: 12px 30px;
+            background: linear-gradient(to right, #44bd32, #2ecc71);
+            border: none;
+            border-radius: 30px;
+            color: white;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .restart-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        @media (max-width: 768px) {
+            .room {
+                height: 400px;
+            }
+            
+            .appliance {
+                transform: scale(0.8);
+            }
+            
+            .bulb {
+                top: 30px;
+                left: 30px;
+            }
+            
+            .lamp {
+                top: 250px;
+                left: 50px;
+            }
+            
+            .fridge {
+                top: 70px;
+                right: 50px;
+            }
+            
+            .computer {
+                bottom: 30px;
+                left: 150px;
+            }
+            
+            .fan {
+                top: 120px;
+                left: 280px;
+            }
+            
+            .tv {
+                bottom: 70px;
+                right: 180px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <div class="energy-container">
+                <div class="energy-label">
+                    <span class="earth-icon"></span>
+                    Energy Wasted
+                </div>
+                <div class="energy-bar">
+                    <div class="energy-fill" id="energy-bar"></div>
+                </div>
+            </div>
+            <div class="timer" id="timer">00:00:00</div>
+        </div>
+        
+        <div class="room">
+            <!-- Walls and Floor -->
+            <div class="wall back-wall"></div>
+            <div class="wall left-wall"></div>
+            <div class="wall right-wall"></div>
+            <div class="floor"></div>
+            
+            <!-- Appliances -->
+            <div class="appliance bulb on" data-energy="1">
+                <div class="bulb-body"></div>
+                <div class="bulb-base"></div>
+                <div class="bulb-light"></div>
+                <div class="switch"></div>
+            </div>
+            
+            <div class="appliance lamp on" data-energy="1">
+                <div class="lamp-base"></div>
+                <div class="lamp-shade"></div>
+                <div class="lamp-light"></div>
+                <div class="switch"></div>
+            </div>
+            
+            <div class="appliance fridge on" data-energy="5">
+                <div class="fridge-door">
+                    <div class="fridge-handle"></div>
+                    <div class="fridge-light"></div>
+                </div>
+                <div class="switch"></div>
+            </div>
+            
+            <div class="appliance computer on" data-energy="3">
+                <div class="monitor">
+                    <div class="screen"></div>
+                </div>
+                <div class="stand"></div>
+                <div class="base"></div>
+                <div class="switch"></div>
+            </div>
+            
+            <div class="appliance fan on" data-energy="2">
+                <div class="fan-base"></div>
+                <div class="fan-pole"></div>
+                <div class="fan-body">
+                    <div class="fan-blade"></div>
+                    <div class="fan-blade"></div>
+                    <div class="fan-blade"></div>
+                    <div class="fan-blade"></div>
+                    <div class="fan-blade"></div>
+                    <div class="fan-blade"></div>
+                </div>
+                <div class="switch"></div>
+            </div>
+            
+            <div class="appliance tv on" data-energy="4">
+                <div class="tv-screen"></div>
+                <div class="tv-stand"></div>
+                <div class="tv-base"></div>
+                <div class="switch"></div>
+            </div>
+            
+            <div class="victory" id="victory">
+                <h2>Congratulations!</h2>
+                <p>You saved energy in <span id="final-time">00:00:00</span>!</p>
+                <button class="restart-btn" onclick="restartGame()">Play Again</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        let energyWasted = 100;
+        let appliancesOff = 0;
+        let totalAppliances = 6;
+        let gameStarted = false;
+        let startTime;
+        let timerInterval;
+        
+        // DOM elements
+        const energyBar = document.getElementById('energy-bar');
+        const timerElement = document.getElementById('timer');
+        const victoryElement = document.getElementById('victory');
+        const finalTimeElement = document.getElementById('final-time');
+        const appliances = document.querySelectorAll('.appliance');
+        
+        // Energy consumption values
+        const energyValues = {
+            bulb: 1,
+            lamp: 1,
+            fridge: 5,
+            computer: 3,
+            fan: 2,
+            tv: 4
+        };
+        
+        // Total energy consumption
+        const totalEnergy = Object.values(energyValues).reduce((a, b) => a + b, 0);
+        
+        // Initialize the game
+        function initGame() {
+            energyWasted = 100;
+            appliancesOff = 0;
+            gameStarted = false;
+            energyBar.style.width = '100%';
+            
+            // Reset all appliances to on state
+            appliances.forEach(appliance => {
+                appliance.classList.add('on');
+                appliance.classList.remove('off');
+                
+                if (appliance.classList.contains('fan')) {
+                    appliance.classList.add('on');
+                }
+            });
+            
+            // Hide victory screen
+            victoryElement.classList.remove('show');
+            
+            // Reset timer
+            clearInterval(timerInterval);
+            timerElement.textContent = '00:00:00';
+        }
+        
+        // Start the timer
+        function startTimer() {
+            startTime = new Date();
+            timerInterval = setInterval(updateTimer, 10);
+        }
+        
+        // Update the timer display
+        function updateTimer() {
+            const now = new Date();
+            const elapsed = new Date(now - startTime);
+            
+            const minutes = elapsed.getMinutes().toString().padStart(2, '0');
+            const seconds = elapsed.getSeconds().toString().padStart(2, '0');
+            const milliseconds = Math.floor(elapsed.getMilliseconds() / 10).toString().padStart(2, '0');
+            
+            timerElement.textContent = `${minutes}:${seconds}:${milliseconds}`;
+        }
+        
+        // Stop the timer
+        function stopTimer() {
+            clearInterval(timerInterval);
+            return timerElement.textContent;
+        }
+        
+        // Update energy bar
+        function updateEnergyBar() {
+            const energyPercent = (energyWasted / 100) * 100;
+            energyBar.style.width = `${energyPercent}%`;
+            
+            // Change color based on energy level
+            if (energyPercent > 70) {
+                energyBar.style.background = 'linear-gradient(to right, #ff4757, #ff9f1a)';
+            } else if (energyPercent > 30) {
+                energyBar.style.background = 'linear-gradient(to right, #ff9f1a, #fbc531)';
+            } else {
+                energyBar.style.background = 'linear-gradient(to right, #2ed573, #44bd32)';
+            }
+        }
+        
+        // Handle appliance click
+        function toggleAppliance(event) {
+            // Make sure we're clicking on the switch
+            if (!event.target.classList.contains('switch')) return;
+            
+            // Start the game on first click
+            if (!gameStarted) {
+                gameStarted = true;
+                startTimer();
+            }
+            
+            const appliance = event.target.closest('.appliance');
+            
+            // If appliance is already off, do nothing
+            if (appliance.classList.contains('off')) return;
+            
+            // Turn off the appliance
+            appliance.classList.remove('on');
+            appliance.classList.add('off');
+            
+            if (appliance.classList.contains('fan')) {
+                appliance.classList.remove('on');
+            }
+            
+            // Update energy wasted
+            const energyValue = parseInt(appliance.getAttribute('data-energy'));
+            energyWasted -= (energyValue / totalEnergy) * 100;
+            
+            // Update game state
+            appliancesOff++;
+            updateEnergyBar();
+            
+            // Check if all appliances are off
+            if (appliancesOff === totalAppliances) {
+                const finalTime = stopTimer();
+                finalTimeElement.textContent = finalTime;
+                setTimeout(() => {
+                    victoryElement.classList.add('show');
+                }, 1000);
+            }
+        }
+        
+        // Restart the game
+        function restartGame() {
+            initGame();
+        }
+        
+        // Add event listeners to all appliances
+        appliances.forEach(appliance => {
+            appliance.addEventListener('click', toggleAppliance);
+        });
+        
+        // Initialize the game on load
+        window.onload = initGame;
+    </script>
+</body>
+</html>

@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Match-a-Cycle</title>
+    <style>
+        /* CSS for the game's interactive design */
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background-color: #f0f8ff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        
+        .game-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card {
+            width: 100px; /* Reduced card width */
+            height: 140px; /* Reduced card height */
+            perspective: 1000px;
+            cursor: pointer;
+            transition: transform 0.5s ease;
+        }
+        
+        .card-inner {
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            position: relative;
+        }
+        
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+        
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 10px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column; /* Align items vertically */
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            font-weight: bold;
+            padding: 5px; /* Add padding for better spacing */
+            text-align: center; /* Center text */
+        }
+        
+        .card-front {
+            background-color: #3498db;
+            color: white;
+            border: 4px solid #2980b9;
+        }
+        
+        .card-back {
+            background-color: #ecf0f1;
+            color: #34495e;
+            transform: rotateY(180deg);
+            border: 4px solid #bdc3c7;
+            font-size: 18px;
+        }
+        
+        .card-back.evaporation { background-color: #f9e79f; }
+        .card-back.condensation { background-color: #d1d8e0; }
+        .card-back.precipitation { background-color: #a9e4f7; }
+        .card-back.collection { background-color: #b2d8d8; }
+        
+        .feedback {
+            font-size: 40px;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 20px;
+            height: 50px;
+            transition: opacity 0.5s;
+        }
+        
+        .correct { color: #2ecc71; }
+        .incorrect { color: #e74c3c; }
+        
+        .icon {
+            font-size: 40px; /* Adjusted icon size */
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .game-container {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 8px;
+            }
+            .card {
+                width: 70px;
+                height: 100px;
+            }
+            .card-front, .card-back { font-size: 14px; }
+            .icon { font-size: 30px; }
+        }
+    </style>
+</head>
+<body>
+
+    <audio id="bg-music" src="https://www.bensound.com/bensound-music/bensound-sunny.mp3" loop autoplay></audio>
+    
+    <h1>Match-a-Cycle! 💧</h1>
+    <div class="game-container" id="game-board"></div>
+    <div class="feedback" id="feedback"></div>
+
+    <script>
+        // JavaScript for the game logic
+        const cardsArray = [
+            { name: "Evaporation", content: "Water turns to vapor.", icon: "☀️" },
+            { name: "Condensation", content: "Vapor forms clouds.", icon: "☁️" },
+            { name: "Precipitation", content: "Rain or snow falls.", icon: "🌧️" },
+            { name: "Collection", content: "Water gathers in rivers.", icon: "🌊" }
+        ];
+
+        // Duplicates for pairs and adds unique IDs
+        const gameCards = [...cardsArray, ...cardsArray].map((card, index) => ({
+            ...card,
+            id: index
+        }));
+
+        let flippedCards = [];
+        let matchedPairs = 0;
+        let lockBoard = false;
+
+        const gameBoard = document.getElementById('game-board');
+        const feedbackDisplay = document.getElementById('feedback');
+        const bgMusic = document.getElementById('bg-music');
+
+        // Function to shuffle the cards
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // Function to create and display cards
+        function createCards(cards) {
+            gameBoard.innerHTML = '';
+            cards.forEach(card => {
+                const cardElement = document.createElement('div');
+                cardElement.classList.add('card');
+                cardElement.dataset.name = card.name;
+                cardElement.innerHTML = `
+                    <div class="card-inner">
+                        <div class="card-front">?</div>
+                        <div class="card-back ${card.name.toLowerCase().replace(/\s/g, '-')}" data-icon="${card.icon}">
+                            <div class="icon">${card.icon}</div>
+                            ${card.content}
+                        </div>
+                    </div>
+                `;
+                cardElement.addEventListener('click', flipCard);
+                gameBoard.appendChild(cardElement);
+            });
+        }
+        
+        // Initial setup on page load
+        window.onload = () => {
+            bgMusic.play();
+            createCards(gameCards);
+
+            // Show cards for 1 second, then flip and shuffle
+            setTimeout(() => {
+                const cards = document.querySelectorAll('.card');
+                cards.forEach(card => card.classList.add('flipped'));
+            }, 500);
+
+            setTimeout(() => {
+                const shuffledCards = shuffle([...gameCards]);
+                createCards(shuffledCards);
+            }, 1500);
+        };
+
+        // Handles the card flip logic
+        function flipCard() {
+            if (lockBoard || this === flippedCards[0]) return;
+            this.classList.add('flipped');
+            flippedCards.push(this);
+
+            if (flippedCards.length === 2) {
+                lockBoard = true;
+                checkForMatch();
+            }
+        }
+        
+        // Checks if the two flipped cards are a match
+        function checkForMatch() {
+            const [firstCard, secondCard] = flippedCards;
+            const isMatch = firstCard.dataset.name === secondCard.dataset.name;
+
+            if (isMatch) {
+                disableCards();
+            } else {
+                unflipCards();
+            }
+        }
+
+        // Disables matched cards
+        function disableCards() {
+            flippedCards.forEach(card => {
+                card.removeEventListener('click', flipCard);
+                card.style.opacity = 0.5;
+            });
+            feedbackDisplay.textContent = 'Correct!';
+            feedbackDisplay.classList.add('correct');
+            setTimeout(() => {
+                feedbackDisplay.textContent = '';
+                feedbackDisplay.classList.remove('correct');
+                resetBoard();
+            }, 1000);
+            
+            matchedPairs++;
+            if (matchedPairs === cardsArray.length) {
+                setTimeout(() => {
+                    alert("You won! You are a water cycle expert!");
+                    resetGame();
+                }, 1000);
+            }
+        }
+        
+        // Flips back unmatched cards
+        function unflipCards() {
+            setTimeout(() => {
+                flippedCards.forEach(card => card.classList.remove('flipped'));
+                resetBoard();
+            }, 1000);
+        }
+
+        // Resets the board for the next turn
+        function resetBoard() {
+            flippedCards = [];
+            lockBoard = false;
+        }
+        
+        // Resets the entire game
+        function resetGame() {
+            matchedPairs = 0;
+            resetBoard();
+            const shuffledCards = shuffle([...gameCards]);
+            createCards(shuffledCards);
+        }
+        
+    </script>
+</body>
+</html>

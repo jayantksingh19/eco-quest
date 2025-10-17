@@ -1,0 +1,141 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Eco-themed color palette */
+    --background: 42 100% 98%;
+    --foreground: 140 15% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 140 15% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 140 15% 15%;
+
+    /* Primary: Forest Green */
+    --primary: 142 76% 36%;
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 142 60% 45%;
+    --primary-dark: 142 90% 25%;
+
+    /* Secondary: Sky Blue */
+    --secondary: 200 100% 85%;
+    --secondary-foreground: 200 15% 25%;
+    --secondary-accent: 200 95% 45%;
+
+    /* Eco-friendly neutrals */
+    --muted: 42 30% 95%;
+    --muted-foreground: 140 8% 55%;
+
+    --accent: 35 100% 92%;
+    --accent-foreground: 140 15% 25%;
+
+    /* Success/Points green */
+    --success: 120 60% 50%;
+    --success-foreground: 0 0% 100%;
+
+    /* Warning/Badge gold */
+    --warning: 45 100% 60%;
+    --warning-foreground: 45 15% 15%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 142 30% 88%;
+    --input: 142 30% 95%;
+    --ring: 142 76% 36%;
+
+    --radius: 0.75rem;
+
+    /* Eco Gradients */
+    --gradient-eco: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-light)) 50%, hsl(var(--secondary-accent)) 100%);
+    --gradient-nature: linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--accent)) 100%);
+    --gradient-earth: linear-gradient(45deg, hsl(var(--primary-dark)) 0%, hsl(35 70% 45%) 100%);
+    
+    /* Shadows */
+    --shadow-eco: 0 4px 20px hsl(var(--primary) / 0.15);
+    --shadow-soft: 0 2px 10px hsl(var(--foreground) / 0.08);
+    --shadow-glow: 0 0 25px hsl(var(--success) / 0.3);
+
+    /* Animations */
+    --transition-eco: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --bounce-gentle: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 140 15% 8%;
+    --foreground: 142 30% 95%;
+
+    --card: 140 15% 10%;
+    --card-foreground: 142 30% 95%;
+
+    --popover: 140 15% 10%;
+    --popover-foreground: 142 30% 95%;
+
+    --primary: 142 70% 45%;
+    --primary-foreground: 0 0% 100%;
+    --primary-light: 142 60% 55%;
+    --primary-dark: 142 90% 35%;
+
+    --secondary: 140 15% 15%;
+    --secondary-foreground: 142 30% 85%;
+    --secondary-accent: 200 80% 50%;
+
+    --muted: 140 15% 12%;
+    --muted-foreground: 142 20% 65%;
+
+    --accent: 140 15% 15%;
+    --accent-foreground: 142 30% 85%;
+
+    --success: 120 50% 50%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 45 90% 55%;
+    --warning-foreground: 45 15% 15%;
+
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 140 15% 20%;
+    --input: 140 15% 15%;
+    --ring: 142 70% 45%;
+
+    /* Dark mode gradients */
+    --gradient-eco: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary-light)) 50%, hsl(var(--secondary-accent)) 100%);
+    --gradient-nature: linear-gradient(180deg, hsl(var(--background)) 0%, hsl(var(--accent)) 100%);
+    --gradient-earth: linear-gradient(45deg, hsl(var(--primary-dark)) 0%, hsl(35 60% 40%) 100%);
+    
+    /* Dark mode shadows */
+    --shadow-eco: 0 4px 20px hsl(var(--primary) / 0.25);
+    --shadow-soft: 0 2px 10px hsl(0 0% 0% / 0.3);
+    --shadow-glow: 0 0 25px hsl(var(--success) / 0.4);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}

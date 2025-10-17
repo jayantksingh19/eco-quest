@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disaster Safety Adventure</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .game-container {
+            max-width: 900px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .game-header {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            padding: 20px;
+            text-align: center;
+            color: white;
+            position: relative;
+        }
+
+        .game-title {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .score-display {
+            font-size: 1.2em;
+            background: rgba(255,255,255,0.3);
+            padding: 10px 20px;
+            border-radius: 20px;
+            display: inline-block;
+        }
+
+        /* --- STAGE & CHARACTER STYLES --- */
+        #stage {
+            background-color: #f0f9ff;
+            border: 4px solid #93c5fd;
+            border-radius: 12px;
+            aspect-ratio: 16 / 9;
+            position: relative;
+            overflow: hidden;
+            transition: background-color 0.5s ease;
+            margin: 20px auto;
+            width: 95%;
+        }
+        
+        #character {
+            position: absolute;
+            bottom: 10%;
+            left: 50%;
+            width: 15%;
+            height: 40%;
+            transform: translateX(-50%);
+            transition: all 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            z-index: 20;
+        }
+        
+        /* --- SCENARIO ELEMENTS --- */
+        .table {
+            position: absolute;
+            bottom: 10%;
+            left: 15%;
+            width: 30%;
+            height: 35%;
+            z-index: 10;
+        }
+        .window {
+            position: absolute;
+            top: 20%;
+            right: 10%;
+            width: 20%;
+            height: 30%;
+            z-index: 5;
+        }
+        .door {
+            position: absolute;
+            bottom: 10%;
+            right: 5%;
+            width: 18%;
+            height: 55%;
+            z-index: 5;
+        }
+        .smoke {
+            position: absolute;
+            top: -20%;
+            left: 0;
+            width: 100%;
+            height: 50%;
+            background: radial-gradient(circle, rgba(80,80,80,0.75) 0%, rgba(100,100,100,0) 70%);
+            animation: drift 20s linear infinite;
+            opacity: 0;
+            transition: opacity 1s;
+            z-index: 40;
+        }
+        #water {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0;
+            background-color: #60a5fa;
+            opacity: 0.7;
+            transition: height 1.5s ease-out;
+            z-index: 15;
+        }
+        #wind-lines {
+            position: absolute;
+            top: 25%;
+            right: 12%;
+            width: 16%;
+            height: 20%;
+            z-index: 1;
+            opacity: 0;
+            transition: opacity 0.5s;
+            animation: whoosh 0.5s linear infinite;
+        }
+
+        /* --- VISUAL CONSEQUENCE STYLES --- */
+        .consequence-object {
+            position: absolute;
+            opacity: 0;
+            z-index: 30;
+            transition: transform 0.6s ease-in, opacity 0.5s ease-in;
+        }
+        #falling-pot { width: 8%; top: 18%; right: 16%; transform: translateY(-100px); }
+        #falling-brick { width: 10%; top: -20%; right: 30%; transform: translateY(-100px) rotate(-15deg); }
+        .fall-animation { opacity: 1; transform: translateY(160px) rotate(75deg); }
+
+        /* --- ANIMATIONS & SCENARIO EFFECTS --- */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        .shake-animation { animation: shake 0.5s linear 3; }
+
+        @keyframes drift {
+            from { transform: translateX(-20%); }
+            to { transform: translateX(20%); }
+        }
+        @keyframes fire-glow {
+            from { background-color: #f0f9ff; }
+            to { background-color: #ffdacc; }
+        }
+        #stage.fire-bg { animation: fire-glow 2s ease-in-out infinite alternate; }
+        
+        @keyframes dizzy {
+            0%, 100% { transform: rotate(0); }
+            25% { transform: translateX(-8px) rotate(-7deg); }
+            50% { transform: translateX(8px) rotate(7deg); }
+            75% { transform: translateX(-8px) rotate(-7deg); }
+        }
+        @keyframes whoosh {
+            from { transform: translateX(20px); }
+            to { transform: translateX(-20px); }
+        }
+
+        /* --- CHARACTER ANIMATIONS (FIXED SPECIFICITY) --- */
+        #character.action-hide { transform: translateX(-140%) translateY(10%) scale(0.8); }
+        #character.action-run-outside { transform: translateX(200%) scale(1.1); }
+        #character.action-near-window { transform: translateX(110%) translateY(-40%); }
+        #character.action-crawl { transform: translateX(-200%) scaleY(0.5) translateY(100%); }
+        #character.action-climb-table { transform: translateX(-110%) translateY(-80%); }
+        #character.action-go-inside { transform: translateX(180%) scale(0.1); opacity: 0;}
+
+        #character.danger-state { animation: dizzy 0.5s ease-in-out 2; }
+        #character.danger-state #hero-eyes-normal { display: none; }
+        #character.danger-state #hero-eyes-danger { display: inline; }
+
+        /* --- FEEDBACK INDICATORS --- */
+        #consequence-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            font-size: 8rem;
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+            z-index: 50;
+        }
+        #consequence-indicator.show { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+
+        /* --- CONTROLS STYLES --- */
+        .controls {
+            padding: 30px;
+            background: linear-gradient(to bottom, #f8f9fa, #e9ecef);
+        }
+
+        .scenario-text {
+            font-size: 1.3em;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+
+        .options-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .option-btn {
+            padding: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: white;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .option-btn:nth-child(1) { background: linear-gradient(135deg, #667eea, #764ba2); }
+        .option-btn:nth-child(2) { background: linear-gradient(135deg, #f093fb, #f5576c); }
+        .option-btn:nth-child(3) { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+        .option-btn:nth-child(4) { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+
+        .option-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        }
+
+        .option-btn:active {
+            transform: translateY(0);
+        }
+
+        .option-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .feedback {
+            padding: 20px;
+            border-radius: 15px;
+            margin-top: 20px;
+            text-align: center;
+            font-size: 1.1em;
+            animation: slideIn 0.5s ease;
+            display: none;
+        }
+
+        .feedback.show {
+            display: block;
+        }
+
+        .feedback.correct {
+            background: linear-gradient(135deg, #d4fc79, #96e6a1);
+            color: #27ae60;
+            border: 2px solid #27ae60;
+        }
+
+        .feedback.incorrect {
+            background: linear-gradient(135deg, #feb47b, #ff7e5f);
+            color: #c0392b;
+            border: 2px solid #c0392b;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .next-btn {
+            padding: 12px 30px;
+            font-size: 1.2em;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            margin: 20px auto;
+            display: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .next-btn.show {
+            display: block;
+        }
+
+        .next-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+        }
+
+        .start-screen, .end-screen {
+            padding: 40px;
+            text-align: center;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            min-height: 600px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .start-screen h1, .end-screen h1 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            animation: bounce 2s infinite;
+        }
+
+        .start-btn, .restart-btn {
+            padding: 20px 40px;
+            font-size: 1.5em;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            margin-top: 20px;
+        }
+
+        .start-btn:hover, .restart-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        }
+
+        .safety-tips {
+            background: white;
+            color: #2c3e50;
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            max-width: 600px;
+            text-align: left;
+        }
+
+        .safety-tips h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .safety-tips ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .safety-tips li {
+            padding: 10px 0;
+            padding-left: 30px;
+            position: relative;
+        }
+
+        .safety-tips li:before {
+            content: "✅";
+            position: absolute;
+            left: 0;
+        }
+
+        .final-score {
+            font-size: 2em;
+            margin: 20px 0;
+            padding: 20px;
+            background: white;
+            color: #667eea;
+            border-radius: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .stars {
+            font-size: 3em;
+            margin: 10px 0;
+        }
+
+        @media (max-width: 768px) {
+            .game-title { font-size: 1.8em; }
+            .scenario-text { font-size: 1.1em; }
+            .option-btn { font-size: 1em; padding: 12px; }
+            #stage { height: 200px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="start-screen" id="startScreen">
+            <h1>🦸 Disaster Safety Heroes 🦸‍♀️</h1>
+            <p style="font-size: 1.3em; margin: 20px 0;">Learn how to stay safe during emergencies!</p>
+            <p style="font-size: 1.1em; opacity: 0.9;">Help our hero make the right choices in dangerous situations</p>
+            <button class="start-btn" id="start-btn">Start Adventure!</button>
+        </div>
+
+        <div id="gameScreen" style="display: none;">
+            <div class="game-header">
+                <h1 class="game-title">🌟 Safety Hero Adventure 🌟</h1>
+                <div class="score-display">Score: <span id="score">0</span> / <span id="totalScenarios">0</span></div>
+            </div>
+
+            <div id="stage">
+                <div id="water"></div>
+                <div id="scenario-elements"></div>
+                <div id="character">
+                    <svg viewBox="0 0 100 150" id="hero-svg">
+                        <circle cx="50" cy="30" r="20" fill="#f0c2a2"/>
+                        <rect x="35" y="50" width="30" height="50" rx="5" fill="#4a90e2"/>
+                        <rect x="35" y="100" width="10" height="40" fill="#333"/>
+                        <rect x="55" y="100" width="10" height="40" fill="#333"/>
+                        <g id="hero-eyes-normal">
+                            <circle cx="42" cy="30" r="3" fill="white"/>
+                            <circle cx="58" cy="30" r="3" fill="white"/>
+                            <circle cx="43" cy="30" r="1.5" fill="black"/>
+                            <circle cx="57" cy="30" r="1.5" fill="black"/>
+                        </g>
+                        <g id="hero-eyes-danger" display="none" stroke="#333" stroke-width="3" stroke-linecap="round">
+                             <line x1="39" y1="27" x2="45" y2="33" />
+                             <line x1="45" y1="27" x2="39" y2="33" />
+                             <line x1="55" y1="27" x2="61" y2="33" />
+                             <line x1="61" y1="27" x2="55" y2="33" />
+                        </g>
+                    </svg>
+                </div>
+                <div id="consequence-indicator"></div>
+            </div>
+
+            <div class="controls">
+                <div class="scenario-text" id="scenarioText">Get ready for your safety adventure!</div>
+                <div class="options-container" id="options"></div>
+                <div class="feedback" id="feedback"></div>
+                <button class="next-btn" id="nextBtn">Next Challenge →</button>
+            </div>
+        </div>
+
+        <div class="end-screen" id="endScreen" style="display: none;">
+            <h1>🎉 Mission Complete! 🎉</h1>
+            <div class="final-score" id="finalScore"></div>
+            <div class="stars" id="stars"></div>
+            <div class="safety-tips" id="safetyTips"></div>
+            <button class="restart-btn" id="restart-btn">Play Again!</button>
+        </div>
+    </div>
+
+    <script>
+        // --- DATA ---
+        // **RESTRUCTURED DATA:** The data is now more detailed.
+        // - `explanation` now clearly states the single best practice for the scenario.
+        // - Incorrect actions have a `reason` property explaining *why* they are dangerous.
+        const scenarios = [
+            {
+                disaster: "earthquake",
+                title: "🌍 Earthquake!",
+                text: "The ground is shaking! What should you do?",
+                elements: `
+                    <svg viewBox="0 0 100 50" class="table"><path d="M0 0 L100 0 L95 10 L5 10 Z" fill="#8B4513"/><rect x="10" y="10" width="10" height="40" fill="#8B4513"/><rect x="80" y="10" width="10" height="40" fill="#8B4513"/></svg>
+                    <svg viewBox="0 0 50 70" class="window"><rect x="0" y="0" width="50" height="70" fill="#a0d2eb" stroke="#663300" stroke-width="4"/><line x1="25" y1="0" x2="25" y2="70" stroke="#663300" stroke-width="2"/><line x1="0" y1="35" x2="50" y2="35" stroke="#663300" stroke-width="2"/></svg>
+                    <svg id="falling-pot" class="consequence-object" viewBox="0 0 100 100"><path d="M20,30 A30,30 0 0,1 80,30 L90,90 A10,10 0 0,1 10,90 Z" fill="#d2b48c"/></svg>
+                    <svg id="falling-brick" class="consequence-object" viewBox="0 0 100 60"><rect width="100" height="60" fill="#b22222"/><rect x="5" y="5" width="90" height="50" fill="#cd5c5c"/></svg>
+                `,
+                actions: [
+                    { text: "Hide under a desk", correct: true, animation: "action-hide", consequence: "safe" },
+                    { text: "Run outside quickly", correct: false, animation: "action-run-outside", consequence: "danger", visualConsequence: "#falling-brick", reason: "Running outside is dangerous due to falling debris from buildings." },
+                    { text: "Stand near the window", correct: false, animation: "action-near-window", consequence: "danger", visualConsequence: "#falling-pot", reason: "Windows can shatter during an earthquake, causing serious injury." },
+                    { text: "Stay still in the open", correct: false, animation: "action-run-outside", consequence: "danger", reason: "Staying in the open leaves you vulnerable to falling objects."}
+                ],
+                explanation: "The safest action is to 'Drop, Cover, and Hold On' under a sturdy piece of furniture. This protects you from falling objects."
+            },
+            {
+                disaster: "fire",
+                title: "🔥 Fire Emergency!",
+                text: "There's smoke in the building! What's the safest thing to do?",
+                elements: `<div class="smoke"></div><svg viewBox="0 0 50 100" class="door"><rect x="0" y="0" width="50" height="100" fill="#a0522d" stroke="#000" stroke-width="2"/><circle cx="42" cy="50" r="3" fill="#ffd700"/></svg>`,
+                actions: [
+                    { text: "Stay low and crawl to exit", correct: true, animation: "action-crawl", consequence: "safe" },
+                    { text: "Hide in the closet", correct: false, animation: "action-hide", consequence: "danger", reason: "Hiding makes it much harder for firefighters to find you." },
+                    { text: "Use the elevator", correct: false, animation: "action-run-outside", consequence: "danger", reason: "Elevators can lose power and trap you inside during a fire." },
+                    { text: "Open all windows", correct: false, animation: "action-near-window", consequence: "danger", reason: "Opening windows can feed the fire with more oxygen, making it grow larger." }
+                ],
+                explanation: "In a fire, smoke rises and is very dangerous to breathe. Staying low and crawling helps you find cleaner air as you escape."
+            },
+            {
+                disaster: "flood",
+                title: "🌊 Flood Warning!",
+                text: "Water is rising quickly! Where should you go?",
+                elements: `
+                    <svg viewBox="0 0 100 50" class="table"><path d="M0 0 L100 0 L95 10 L5 10 Z" fill="#8B4513"/><rect x="10" y="10" width="10" height="40" fill="#8B4513"/><rect x="80" y="10" width="10" height="40" fill="#8B4513"/></svg>
+                    <svg viewBox="0 0 50 100" class="door"><rect x="0" y="0" width="50" height="100" fill="#a0522d" stroke="#000" stroke-width="2"/><circle cx="42" cy="50" r="3" fill="#ffd700"/></svg>
+                `,
+                actions: [
+                    { text: "Go to higher ground", correct: true, animation: "action-climb-table", consequence: "safe" },
+                    { text: "Try to swim across", correct: false, animation: "action-run-outside", consequence: "danger", reason: "Floodwater can have strong, unseen currents and may be contaminated or hide dangers." },
+                    { text: "Stay in the basement", correct: false, animation: "action-hide", consequence: "danger", reason: "Basements are the first part of a house to flood and can trap you." }
+                ],
+                explanation: "The golden rule of floods is to always get to the highest ground possible. 'Turn Around, Don't Drown.'"
+            },
+            {
+                disaster: "cyclone",
+                title: "🌪️ Cyclone Alert!",
+                text: "Strong winds are coming! What should you do?",
+                elements: `
+                    <svg id="wind-lines" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M0 20 C 30 0, 70 40, 100 20" stroke="grey" stroke-width="4" fill="none"/><path d="M0 80 C 30 60, 70 100, 100 80" stroke="grey" stroke-width="4" fill="none"/></svg>
+                    <svg viewBox="0 0 50 70" class="window"><rect x="0" y="0" width="50" height="70" fill="#a0d2eb" stroke="#663300" stroke-width="4"/><line x1="25" y1="0" x2="25" y2="70" stroke="#663300" stroke-width="2"/><line x1="0" y1="35" x2="50" y2="35" stroke="#663300" stroke-width="2"/></svg>
+                    <svg viewBox="0 0 50 100" class="door"><rect x="0" y="0" width="50" height="100" fill="#a0522d" stroke="#000" stroke-width="2"/><circle cx="42" cy="50" r="3" fill="#ffd700"/></svg>
+                `,
+                actions: [
+                    { text: "Go to an interior room", correct: true, animation: "action-go-inside", consequence: "safe" },
+                    { text: "Go outside to check", correct: false, animation: "action-run-outside", consequence: "danger", reason: "Going outside exposes you to extreme winds and dangerous flying objects." },
+                    { text: "Stand near the window", correct: false, animation: "action-near-window", consequence: "danger", reason: "Windows are vulnerable and can break from high winds or flying debris." },
+                    { text: "Stand on the roof", correct: false, animation: "action-climb-table", consequence: "danger", reason: "The roof is the most exposed and dangerous place during a cyclone." }
+                ],
+                explanation: "A small, interior room on the lowest floor with no windows is the safest place to shelter from high winds and flying debris."
+            }
+        ];
+        
+        const allSafetyTips = [
+            { disaster: "earthquake", tip: "Earthquake: 'Drop, Cover, and Hold On' under sturdy furniture." },
+            { disaster: "fire", tip: "Fire: 'Get Low and Go' to stay below the smoke." },
+            { disaster: "flood", tip: "Flood: Always get to the highest ground you can and avoid floodwater." },
+            { disaster: "cyclone", tip: "Cyclone/Tornado: Find an inside room with no windows." },
+            { disaster: "general", tip: "Always have a family emergency plan and practice it regularly." }
+        ];
+
+        let currentScenarioIndex = 0;
+        let score = 0;
+
+        const startScreen = document.getElementById('startScreen');
+        const gameScreen = document.getElementById('gameScreen');
+        const endScreen = document.getElementById('endScreen');
+        const stage = document.getElementById('stage');
+        const character = document.getElementById('character');
+        const scenarioElements = document.getElementById('scenario-elements');
+        const scenarioText = document.getElementById('scenarioText');
+        const optionsContainer = document.getElementById('options');
+        const feedbackEl = document.getElementById('feedback');
+        const consequenceIndicator = document.getElementById('consequence-indicator');
+        const scoreEl = document.getElementById('score');
+        const totalScenariosEl = document.getElementById('totalScenarios');
+        const finalScore = document.getElementById('finalScore');
+        const safetyTips = document.getElementById('safetyTips');
+        const starsEl = document.getElementById('stars');
+        const startBtn = document.getElementById('start-btn');
+        const nextBtn = document.getElementById('nextBtn');
+        const restartBtn = document.getElementById('restart-btn');
+
+        function startGame() {
+            currentScenarioIndex = 0;
+            score = 0;
+            startScreen.style.display = 'none';
+            endScreen.style.display = 'none';
+            gameScreen.style.display = 'block';
+            totalScenariosEl.textContent = scenarios.length;
+            scoreEl.textContent = '0';
+            displayScenario();
+        }
+
+        function displayScenario() {
+            // Reset all visual elements for the new scenario
+            character.className = '';
+            character.style.opacity = '1';
+            stage.className = '';
+            document.getElementById('water').style.height = '0'; // Explicitly reset water
+            consequenceIndicator.classList.remove('show');
+            feedbackEl.classList.remove('show');
+            nextBtn.classList.remove('show');
+            optionsContainer.innerHTML = '';
+            
+            const currentScenario = scenarios[currentScenarioIndex];
+            
+            scoreEl.textContent = score;
+            scenarioText.innerHTML = `<strong>${currentScenario.title}</strong><br>${currentScenario.text}`;
+            scenarioElements.innerHTML = currentScenario.elements;
+            
+            // Special setup for fire scenario
+            if (currentScenario.disaster === 'fire') {
+                stage.classList.add('fire-bg');
+                setTimeout(() => {
+                    const smokeEl = document.querySelector('.smoke');
+                    if (smokeEl) smokeEl.style.opacity = '1';
+                }, 100);
+            }
+
+            // Create and append option buttons
+            currentScenario.actions.forEach(action => {
+                const button = document.createElement('button');
+                button.textContent = action.text;
+                button.className = 'option-btn';
+                button.onclick = () => handleActionSelect(action);
+                optionsContainer.appendChild(button);
+            });
+        }
+
+        function handleActionSelect(action) {
+            // Disable all buttons to prevent multiple clicks
+            Array.from(optionsContainer.children).forEach(btn => btn.disabled = true);
+            const currentScenario = scenarios[currentScenarioIndex];
+
+            // **IMPROVED LOGIC:** Use a switch statement for cleaner handling of disaster effects.
+            switch (currentScenario.disaster) {
+                case 'earthquake':
+                case 'cyclone':
+                    stage.classList.add('shake-animation');
+                    if (currentScenario.disaster === 'cyclone') {
+                        setTimeout(() => { document.getElementById('wind-lines').style.opacity = '1'; }, 200);
+                    }
+                    break;
+                case 'flood':
+                    setTimeout(() => { document.getElementById('water').style.height = '40%'; }, 200);
+                    break;
+            }
+
+            // Trigger character animation
+            character.classList.add(action.animation);
+
+            // Trigger visual consequences for wrong actions (e.g., falling objects)
+            if (action.visualConsequence) {
+                setTimeout(() => {
+                    const consequenceEl = document.querySelector(action.visualConsequence);
+                    if (consequenceEl) consequenceEl.classList.add('fall-animation');
+                }, 400);
+            }
+
+            // Delay feedback to allow animations to play out
+            setTimeout(() => {
+                // **FIXED BUG:** Provide clear, educational feedback for both correct and incorrect answers.
+                if (action.correct) {
+                    consequenceIndicator.textContent = '✅';
+                    consequenceIndicator.style.color = '#22c55e';
+                    score += 10;
+                    scoreEl.textContent = score;
+                    feedbackEl.innerHTML = `<strong>Correct!</strong> ${currentScenario.explanation}`;
+                    feedbackEl.className = 'feedback show correct';
+                } else {
+                    character.classList.add('danger-state');
+                    consequenceIndicator.textContent = '😮';
+                    consequenceIndicator.style.color = '#f97316';
+                    // Provide a specific reason for the mistake, then reinforce the correct action.
+                    feedbackEl.innerHTML = `<strong>Not quite.</strong> ${action.reason} <br><br><strong>Remember:</strong> ${currentScenario.explanation}`;
+                    feedbackEl.className = 'feedback show incorrect';
+                }
+                
+                consequenceIndicator.classList.add('show');
+                nextBtn.classList.add('show');
+            }, 1200);
+        }
+
+        function nextScenario() {
+            currentScenarioIndex++;
+            if (currentScenarioIndex < scenarios.length) {
+                displayScenario();
+            } else {
+                endGame();
+            }
+        }
+        
+        function endGame() {
+            gameScreen.style.display = 'none';
+            endScreen.style.display = 'block';
+            
+            const percentage = Math.round((score / (scenarios.length * 10)) * 100);
+            
+            finalScore.innerHTML = `
+                You scored: ${score} out of ${scenarios.length * 10}<br>
+                <span style="font-size: 0.8em;">That's ${percentage}% correct!</span>
+            `;
+            
+            let stars = '';
+            if (percentage >= 80) {
+                stars = '⭐⭐⭐';
+            } else if (percentage >= 60) {
+                stars = '⭐⭐';
+            } else {
+                stars = '⭐';
+            }
+            starsEl.textContent = stars;
+            
+            // **IMPROVED LOGIC:** Display a summary of key safety tips for each disaster covered in the game.
+            let tipsHtml = '<h3>🛡️ Key Safety Takeaways:</h3><ul>';
+            const encounteredDisasters = [...new Set(scenarios.map(s => s.disaster))];
+            
+            encounteredDisasters.forEach(disasterType => {
+                const safetyTip = allSafetyTips.find(tipObj => tipObj.disaster === disasterType);
+                if (safetyTip) {
+                    tipsHtml += `<li>${safetyTip.tip}</li>`;
+                }
+            });
+            tipsHtml += `<li>${allSafetyTips.find(t => t.disaster === 'general').tip}</li>`;
+            tipsHtml += '</ul>';
+            safetyTips.innerHTML = tipsHtml;
+        }
+
+        // Event listeners
+        startBtn.addEventListener('click', startGame);
+        nextBtn.addEventListener('click', nextScenario);
+        restartBtn.addEventListener('click', startGame);
+    </script>
+</body>
+</html>
