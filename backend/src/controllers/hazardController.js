@@ -1,5 +1,5 @@
 import HazardReport from "../models/HazardReport.js";
-import { sendEmail } from "../utils/otpService.js";
+import { sendEmail, renderBrandedEmail } from "../utils/otpService.js";
 
 const otpDebugFlag = process.env.OTP_DEBUG;
 const OTP_DEBUG =
@@ -144,64 +144,91 @@ export const createHazardReport = async (req, res) => {
 
     if (reporterEmail) {
       const mapLink = buildMapLink(parsedCoordinates);
-
-      const htmlSections = [
-        `<p>Hi ${reporterName || "there"},</p>`,
-        "<p>Thanks for looking out for the environment! We received your hazard report and our team will review it right away.</p>",
-        "<hr style=\"margin:16px 0;\" />",
-        `<p><strong>Reference:</strong> ${reference}</p>`,
-        `<p><strong>Title:</strong> ${report.title}</p>`,
-        `<p><strong>Location:</strong> ${report.location}</p>`,
-        `<p><strong>Category:</strong> ${resolvedCategory || "Not specified"}</p>`,
-        `<p><strong>Description:</strong></p><p>${report.description?.replace(/\n/g, "<br/>")}</p>`,
-        report.urgent ? "<p><strong>Priority:</strong> Urgent ✅</p>" : "<p><strong>Priority:</strong> Standard</p>",
-        mapLink ? `<p><a href="${mapLink}" target="_blank" rel="noopener">View this location on Google Maps</a></p>` : "",
-        "<hr style=\"margin:16px 0;\" />",
-      ];
-
-      if (attachmentEntries.length > 0) {
-        htmlSections.push(
-          `<p><strong>Attachments:</strong></p>` +
-            "<ul>" +
-            attachmentEntries
-              .map(
-                (file, index) =>
-                  `<li>${index + 1}. ${file.renamed} (${Math.round(file.size / 1024)} KB)</li>`
-              )
-              .join("") +
-            "</ul>"
-        );
-      }
-
-      htmlSections.push(
-        "<p>We'll share updates as soon as the report moves forward.</p>",
-        "<p>– EcoQuest Support Team</p>"
-      );
-
+      const safeName = reporterName || "EcoQuest Guardian";
       const subject = "EcoQuest Hazard Report Confirmation";
+
+      const summaryHtml = `<div style="background:#f1f6ff;border-radius:14px;padding:18px 20px;margin:24px 0;">
+          <p style="margin:0 0 10px;"><strong>Reference:</strong> ${reference}</p>
+          <p style="margin:0 0 10px;"><strong>Title:</strong> ${report.title}</p>
+          <p style="margin:0 0 10px;"><strong>Location:</strong> ${report.location}</p>
+          <p style="margin:0 0 10px;"><strong>Category:</strong> ${resolvedCategory || "Not specified"}</p>
+          <p style="margin:0;"><strong>Priority:</strong> ${report.urgent ? "Urgent ✅" : "Standard"}</p>
+        </div>`;
+
+      const descriptionHtml = `<div style="margin-top:12px;">
+          <p style="margin:0 0 6px;font-weight:600;color:#1d4d3b;">What you spotted</p>
+          <p style="margin:0;color:#314338;">${(report.description || "").replace(/\n/g, "<br/>")}</p>
+        </div>`;
+
+      const mapHtml = mapLink
+        ? `<p style="margin-top:16px;"><a style="color:#166534;font-weight:600;" href="${mapLink}" target="_blank" rel="noopener">View this location on Google Maps</a></p>`
+        : "";
+
+      const attachmentsList =
+        attachmentEntries.length > 0
+          ? `<div style="margin-top:24px;">
+              <p style="margin:0 0 8px;font-weight:600;color:#1d513c;">Evidence you shared</p>
+              <ul style="margin:0;padding-left:18px;color:#314338;">
+                ${attachmentEntries
+                  .map(
+                    (file, index) =>
+                      `<li style="margin:4px 0;">${index + 1}. ${file.renamed} (${Math.round(file.size / 1024)} KB)</li>`
+                  )
+                  .join("")}
+              </ul>
+            </div>`
+          : "";
+
+      const htmlBody = `${summaryHtml}${descriptionHtml}${mapHtml}${attachmentsList}<p style="margin-top:24px;">Our team will review your report and share updates as soon as we have them.</p>`;
+
+      const html = renderBrandedEmail({
+        heading: "Thanks for keeping EcoQuest safe!",
+        previewText: `We received your hazard report "${report.title}".`,
+        introHtml: `<p>Hi ${safeName},</p><p>Thanks for looking out for your community! We’ve logged your hazard report.</p>`,
+        bodyHtml: htmlBody,
+        closingHtml: "<p>Together we make every space greener.<br/><strong>EcoQuest Support Team</strong></p>",
+      });
+
+      const textBody = [
+        `Hi ${safeName},`,
+        "Thanks for looking out for your community! We’ve logged your hazard report.",
+        "",
+        `Reference: ${reference}`,
+        `Title: ${report.title}`,
+        `Location: ${report.location}`,
+        `Category: ${resolvedCategory || "Not specified"}`,
+        `Priority: ${report.urgent ? "Urgent" : "Standard"}`,
+        "",
+        "Description:",
+        report.description || "",
+        mapLink ? `Map: ${mapLink}` : "",
+        attachmentEntries.length
+          ? `Attachments: ${attachmentEntries
+              .map((file, index) => `${index + 1}. ${file.renamed} (${Math.round(file.size / 1024)} KB)`)
+              .join("; ")}`
+          : "",
+        "",
+        "Our team will review your report and share updates as soon as we have them.",
+        "",
+        "EcoQuest Support Team",
+      ]
+        .filter(Boolean)
+        .join("\n");
 
       try {
         await sendEmail({
           to: reporterEmail,
           subject,
-          text: htmlSections
-            .map((section) =>
-              section
-                .replace(/<[^>]*>/g, "")
-                .replace(/\s+/g, " ")
-                .trim()
-            )
-            .filter(Boolean)
-            .join("\n"),
-          html: htmlSections.join(""),
-      attachments:
-        attachmentEntries.length > 0
-          ? attachmentEntries.map((file) => ({
-              filename: file.renamed,
-              content: file.buffer,
-              contentType: file.type,
-            }))
-          : undefined,
+          text: textBody,
+          html,
+          attachments:
+            attachmentEntries.length > 0
+              ? attachmentEntries.map((file) => ({
+                  filename: file.renamed,
+                  content: file.buffer,
+                  contentType: file.type,
+                }))
+              : undefined,
         });
       } catch (emailError) {
         console.error("hazardController sendEmail error", emailError);

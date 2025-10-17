@@ -1,5 +1,5 @@
 import TaskSubmission from "../models/TaskSubmission.js";
-import { sendEmail } from "../utils/otpService.js";
+import { sendEmail, renderBrandedEmail } from "../utils/otpService.js";
 
 const otpDebugFlag = process.env.OTP_DEBUG;
 const OTP_DEBUG =
@@ -117,53 +117,82 @@ export const submitTaskProof = async (req, res) => {
 
     if (reporterEmail) {
       const subject = "EcoQuest Task Submission Confirmation";
-      const htmlSections = [
-        `<p>Hi ${reporterName || "EcoQuest Hero"},</p>`,
-        "<p>Congratulations! We received your task submission and it looks fantastic.</p>",
-        "<hr style=\"margin:16px 0;\" />",
-        `<p><strong>Reference:</strong> ${reference}</p>`,
-        `<p><strong>Task:</strong> ${taskTitle}</p>`,
-        `<p><strong>Task ID:</strong> ${numericTaskId}</p>`,
-        `<p><strong>Description:</strong></p><p>${trimmedDescription.replace(/\n/g, "<br/>")}</p>`,
-        `<p><strong>Location:</strong> ${trimmedLocation}</p>`,
-        `<p><strong>Drive Link:</strong> <a href="${trimmedDriveLink}" target="_blank" rel="noopener">${trimmedDriveLink}</a></p>`,
-        `<p><strong>EcoPoints Earned:</strong> ${Number(points) || 0}</p>`,
-        "<hr style=\"margin:16px 0;\" />",
-      ];
+      const safeName = reporterName || "EcoQuest Hero";
+      const pointsEarned = Number(points) || 0;
 
-      if (attachmentEntries.length > 0) {
-        htmlSections.push(
-          `<p><strong>Attachments:</strong></p>` +
-            "<ul>" +
-            attachmentEntries
-              .map(
-                (file, index) =>
-                  `<li>${index + 1}. ${file.renamed} (${Math.round(file.size / 1024)} KB)</li>`
-              )
-              .join("") +
-            "</ul>"
-        );
-      }
+      const attachmentsList =
+        attachmentEntries.length > 0
+          ? `<div style="margin-top:24px;">
+              <p style="margin:0 0 8px;font-weight:600;color:#1d513c;">Attachments</p>
+              <ul style="margin:0;padding-left:18px;color:#314338;">
+                ${attachmentEntries
+                  .map(
+                    (file, index) =>
+                      `<li style="margin:4px 0;">${index + 1}. ${file.renamed} (${Math.round(file.size / 1024)} KB)</li>`
+                  )
+                  .join("")}
+              </ul>
+            </div>`
+          : "";
 
-      htmlSections.push(
-        "<p>We’ll review your submission and update your EcoQuest progress soon. Keep up the amazing work!</p>",
-        "<p>– EcoQuest Support Team</p>"
-      );
+      const summaryHtml = `<div style="background:#f1f9f4;border-radius:14px;padding:18px 20px;margin:24px 0;">
+          <p style="margin:0 0 10px;"><strong>Reference:</strong> ${reference}</p>
+          <p style="margin:0 0 10px;"><strong>Task:</strong> ${taskTitle}</p>
+          <p style="margin:0 0 10px;"><strong>Task ID:</strong> ${numericTaskId}</p>
+          <p style="margin:0 0 10px;"><strong>Location:</strong> ${trimmedLocation}</p>
+          <p style="margin:0;"><strong>Drive Link:</strong> <a style="color:#14804a;" href="${trimmedDriveLink}" target="_blank" rel="noopener">${trimmedDriveLink}</a></p>
+        </div>`;
+
+      const descriptionHtml = `<div style="margin-top:12px;">
+          <p style="margin:0 0 6px;font-weight:600;color:#1d513c;">What you shared</p>
+          <p style="margin:0;color:#314338;">${trimmedDescription.replace(/\n/g, "<br/>")}</p>
+        </div>`;
+
+      const htmlBody = `${summaryHtml}${descriptionHtml}${attachmentsList}<p style="margin-top:24px;">We’ll review your submission shortly and update your EcoQuest progress.</p>`;
+
+      const html = renderBrandedEmail({
+        heading: "We received your EcoQuest task!",
+        previewText: `Your task "${taskTitle}" is now in review.`,
+        introHtml: `<p>Hi ${safeName},</p><p>Great job! Your task submission was received successfully.</p>`,
+        highlightValue: `+${pointsEarned} EcoPoints`,
+        highlightLabel: "Impact Earned",
+        bodyHtml: htmlBody,
+        closingHtml: "<p>Keep up the inspiring work!<br/><strong>EcoQuest Support Team</strong></p>",
+      });
+
+      const textBody = [
+        `Hi ${safeName},`,
+        "Great job! Your task submission was received successfully.",
+        "",
+        `Reference: ${reference}`,
+        `Task: ${taskTitle}`,
+        `Task ID: ${numericTaskId}`,
+        `Location: ${trimmedLocation}`,
+        `Drive Link: ${trimmedDriveLink}`,
+        "",
+        "Description:",
+        trimmedDescription,
+        "",
+        `EcoPoints Earned: ${pointsEarned}`,
+        attachmentEntries.length
+          ? `Attachments: ${attachmentEntries
+              .map((file, index) => `${index + 1}. ${file.renamed} (${Math.round(file.size / 1024)} KB)`)
+              .join("; ")}`
+          : "",
+        "",
+        "We’ll review your submission shortly and update your EcoQuest progress.",
+        "",
+        "EcoQuest Support Team",
+      ]
+        .filter(Boolean)
+        .join("\n");
 
       try {
         await sendEmail({
           to: reporterEmail,
           subject,
-          text: htmlSections
-            .map((section) =>
-              section
-                .replace(/<[^>]*>/g, "")
-                .replace(/\s+/g, " ")
-                .trim()
-            )
-            .filter(Boolean)
-            .join("\n"),
-          html: htmlSections.join(""),
+          text: textBody,
+          html,
           attachments:
             attachmentEntries.length > 0
               ? attachmentEntries.map((file) => ({
