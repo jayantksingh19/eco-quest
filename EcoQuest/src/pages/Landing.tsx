@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import EcoCard from "../components/EcoCard";
 import {
@@ -12,6 +13,8 @@ import {
 import { Footer } from "../components/Navigation";
 
 const Landing = () => {
+  const navigate = useNavigate();
+
   const features = [
     {
       icon: BookOpen,
@@ -81,7 +84,7 @@ const Landing = () => {
                   variant="default"
                   size="lg"
                   className="group bg-gradient-eco hover:opacity-90"
-                  onClick={() => (window.location.href = "/classes")}
+                  onClick={() => navigate("/classes")}
                 >
                   Start Learning
                   <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
@@ -89,9 +92,9 @@ const Landing = () => {
                 <Button
                   variant="outline"
                   size="lg"
-                  onClick={() => {
-                    window.location.href = "/auth?type=teacher";
-                  }}
+                  onClick={() =>
+                    navigate({ pathname: "/auth", search: "?type=teacher" })
+                  }
                 >
                   Join as School
                 </Button>
