@@ -10,13 +10,47 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors());
+const defaultOrigins = [
+  "https://eco-quest-1.onrender.com",
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+];
+
+const allowedOrigins = (
+  process.env.CORS && process.env.CORS.trim().length > 0
+    ? process.env.CORS
+    : defaultOrigins.join(",")
+)
+  .split(",")
+  .map((value) => value.trim())
+  .filter(Boolean);
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (
+      !origin ||
+      allowedOrigins.length === 0 ||
+      allowedOrigins.includes("*") ||
+      allowedOrigins.includes(origin)
+    ) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 app.use(express.json());
 
 app.get("/health", (_req, res) => {
   res.json({
      status: "ok",
-     message: "Lee behendchod main toh chal gaya!!! ab bol bsdk??💦" 
+     message: "Lee bhai main toh chal gaya!!! ab bol bro??💦" 
     });
 });
 
