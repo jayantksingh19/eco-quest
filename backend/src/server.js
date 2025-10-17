@@ -45,6 +45,7 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 app.use(express.json());
+app.options("/health", cors(corsOptions));
 app.options(/^\/api\/.*$/, cors(corsOptions));
 
 app.get("/health", (_req, res) => {
