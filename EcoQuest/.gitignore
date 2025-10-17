@@ -28,3 +28,6 @@ assets/
 *.sw?
 
 src/vite-env.d.ts
+
+
+.env
